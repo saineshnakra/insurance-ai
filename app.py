@@ -249,30 +249,18 @@ if uploaded_file is not None:
 else:
     st.info("Please upload your insurance policy to proceed.")
 
-# Function to generate responses using OpenAI GPT-4
-def generate_response(prompt):
-    with st.spinner('Processing...'):
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are an insurance expert."},
-                {"role": "user", "content": prompt}
-            ],
-        )
-    return response.choices[0].message.content
-
 # If the "Get me free stuff!" button is pressed and the PDF is uploaded
 if get_free_stuff and pdf_text:
     st.markdown("### 🛡️ Preventive and Free Services Covered:")
-    prompt = f"""
-    You are an insurance expert. Please list all preventive and free services covered in this insurance policy, along with how they can be accessed.
-
-    Here is the insurance policy:
-
-    {pdf_text}
-    """
-    services_response = generate_response(prompt)
-    services_covered = services_response.strip().split('\n')
+    with st.spinner('Retrieving services covered by your insurance...'):
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an insurance expert."},
+                {"role": "user", "content": f"Please list all preventive and free services covered in this insurance policy, along with how they can be accessed.\n\nHere is the insurance policy:\n\n{pdf_text}"}
+            ],
+        )
+        services_covered = response.choices[0].message.content.strip().split('\n')
 
     st.success("Here is a list of services covered by your insurance:")
     for service in services_covered:
@@ -281,16 +269,18 @@ if get_free_stuff and pdf_text:
 # Display a section for booking the chosen service
 if find_service_location and user_booking_input and user_location:
     st.markdown("### 📆 Booking Information")
-    prompt = f"""
-    You are an insurance expert. Where can I book {user_booking_input} near {user_location} according to my insurance policy?
+    with st.spinner('Finding booking locations...'):
+        booking_response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an insurance expert."},
+                {"role": "user", "content": f"Where can I book {user_booking_input} near {user_location} according to my insurance policy?\n\nHere is the insurance policy:\n\n{pdf_text}"}
+            ],
+        )
+        booking_info = booking_response.choices[0].message.content.strip()
 
-    Here is the insurance policy:
-
-    {pdf_text}
-    """
-    booking_response = generate_response(prompt)
     st.success("You can book this service at the following location(s):")
-    st.write(booking_response)
+    st.write(booking_info)
 
 elif find_service_location and not user_location:
     st.info("Please specify your location in the sidebar to proceed with booking.")
